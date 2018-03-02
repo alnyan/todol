@@ -1,4 +1,7 @@
 #pragma once
+#ifdef WITH_COLOR
+#include "color.hpp"
+#endif
 #include "json.hpp"
 #include <chrono>
 #include <string>
@@ -7,6 +10,17 @@
 using njson = nlohmann::json;
 
 #define TODOL_FLAG_COMPLETE 1
+
+#ifdef WITH_COLOR
+#define TODOL_COLOR(n) todol::color::n
+#define TODOL_RESET todol::color::reset
+
+#define TODOL_ERROR(m) std::cerr << todol::color::bold << todol::color::red << m << todol::color::reset << std::endl
+#else
+#define TODOL_COLOR(n) ""
+#define TODOL_RESET    ""
+#define TODOL_ERROR(m) std::cerr << m << std::endl
+#endif
 
 namespace todol {
 

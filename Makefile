@@ -1,4 +1,4 @@
-CXXFLAGS:=$(if ${WITH_WEB},-DWITH_WEB -lpthread,)
+CXXFLAGS:=$(if ${WITH_WEB},-DWITH_WEB -lpthread,) $(if ${WITHOUT_COLOR},,-DWITH_COLOR)
 SOURCES:=src/todol.cpp src/main.cpp $(if ${WITH_WEB},src/todol_web.cpp src/socket.cpp,)
 
 all:

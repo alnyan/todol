@@ -1,4 +1,4 @@
-#if WITH_WEB
+#ifdef WITH_WEB
 #include "todol_web.hpp"
 #endif
 #include "todol.hpp"
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	std::cerr << "Unknown command: " << argv[1] << std::endl;
+	TODOL_ERROR("Unknown command: " << argv[1]);
 
 	return EXIT_FAILURE;
 }

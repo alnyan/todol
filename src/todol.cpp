@@ -1,3 +1,6 @@
+#if WITH_WEB
+#include "todol_web.hpp"
+#endif
 #include <sys/stat.h>
 #include "todol.hpp"
 #include <unistd.h>
@@ -6,7 +9,6 @@
 #include <climits>
 #include <cstring>
 #include <pwd.h>
-#include "todol_web.hpp"
 
 static char s_userHomeBuffer[PATH_MAX + 1] = { 0 };
 
@@ -110,7 +112,7 @@ int todol::cmdAdd(const std::string &title) {
 
 	if (readDatabase(db)) {
 		if (findTask(db, title, t) != -1) {
-			std::cerr << "Task \"" << title << "\" already exists" << std::endl;
+			TODOL_ERROR("Task \"" << title << "\" already exists");
 			return EXIT_FAILURE;
 		}
 	} else {
@@ -119,10 +121,11 @@ int todol::cmdAdd(const std::string &title) {
 
 	int id = addTask(db, title, 0);
 
-	std::cout << "Added " << id << std::endl;
+	std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "Added [" << id
+			<< "]" << TODOL_RESET << std::endl;
 
 	if (!writeDatabase(db)) {
-		std::cerr << "Failed to save task" << std::endl;
+		TODOL_ERROR("Failed to save task");
 		return EXIT_FAILURE;
 	}
 
@@ -133,7 +136,7 @@ int todol::cmdLs() {
 	DbHandle db;
 
 	if (!readDatabase(db)) {
-		std::cerr << "Database does not exist" << std::endl;
+		TODOL_ERROR("Database does not exist");
 		return EXIT_FAILURE;
 	}
 
@@ -141,17 +144,25 @@ int todol::cmdLs() {
 	char buf[512];
 
 	for (const auto &task : ls) {
-		std::cout << "[" << task.id << "]";
 		if (task.flags & TODOL_FLAG_COMPLETE) {
-			std::cout << "+++";
+			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "["
+					<< task.id << "]" << TODOL_RESET;
+		} else {
+			std::cout << "[" << task.id << "]";
 		}
-		std::cout << "\t" << task.title << std::endl;
+		std::cout << "\t" << TODOL_COLOR(bold) << task.title << TODOL_RESET
+				<< std::endl;
 		time_t t = task.timestamp;
 		struct tm lt;
 		localtime_r(&t, &lt);
 		if (strftime(buf, 512, "%c", &lt) == 0) {
-			std::cerr << "Error happened" << std::endl;
+			std::cerr << TODOL_COLOR(bold) << TODOL_COLOR(red)
+					<< "Error happened" << TODOL_RESET << std::endl;
 			return EXIT_FAILURE;
+		}
+		if (task.flags & TODOL_FLAG_COMPLETE) {
+			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "+++"
+					<< TODOL_RESET;
 		}
 		std::cout << "\t" << buf << std::endl;
 	}
@@ -192,7 +203,7 @@ int todol::cmdClear() {
 	DbHandle db;
 
 	if (!readDatabase(db)) {
-		std::cerr << "Database does not exist" << std::endl;
+		TODOL_ERROR("Database does not exist");
 		return EXIT_FAILURE;
 	}
 
@@ -200,7 +211,7 @@ int todol::cmdClear() {
 	db.json["counter"] = 0;
 
 	if (!writeDatabase(db)) {
-		std::cerr << "Failed to commit changes" << std::endl;
+		TODOL_ERROR("Failed to commit changes");
 		return EXIT_FAILURE;
 	}
 
@@ -211,7 +222,7 @@ int todol::cmdDo(const std::list<int> &indices) {
 	DbHandle db;
 
 	if (!readDatabase(db)) {
-		std::cerr << "Database does not exist" << std::endl;
+		TODOL_ERROR("Database does not exist");
 		return EXIT_FAILURE;
 	}
 
@@ -221,17 +232,20 @@ int todol::cmdDo(const std::list<int> &indices) {
 
 		if (r) {
 			if (((flags_t) task["flags"]) & TODOL_FLAG_COMPLETE) {
-				std::cout << "[" << task["id"] << "] Is already completed"
+				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
+						<< task["id"] << "] Is already completed" << TODOL_RESET
 						<< std::endl;
 			} else {
 				task["flags"] = ((flags_t) task["flags"]) | TODOL_FLAG_COMPLETE;
-				std::cout << "Completed [" << task["id"] << "]" << std::endl;
+				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
+						<< "Completed " << "[" << task["id"] << "]"
+						<< TODOL_RESET << std::endl;
 			}
 		}
 	}
 
 	if (!writeDatabase(db)) {
-		std::cerr << "Failed to commit changes" << std::endl;
+		TODOL_ERROR("Failed to commit changes");
 		return EXIT_FAILURE;
 	}
 
@@ -242,7 +256,7 @@ int todol::cmdUndo(const std::list<int> &indices) {
 	DbHandle db;
 
 	if (!readDatabase(db)) {
-		std::cerr << "Database does not exist" << std::endl;
+		TODOL_ERROR("Database does not exist");
 		return EXIT_FAILURE;
 	}
 
@@ -254,16 +268,18 @@ int todol::cmdUndo(const std::list<int> &indices) {
 			if (((flags_t) task["flags"]) & TODOL_FLAG_COMPLETE) {
 				task["flags"] =
 						((flags_t) task["flags"]) & ~TODOL_FLAG_COMPLETE;
-				std::cout << "Uncompleted [" << task["id"] << "]" << std::endl;
+				std::cout << TODOL_COLOR(bold) << "Uncompleted [" << task["id"]
+						<< "]" << TODOL_RESET << std::endl;
 			} else {
-				std::cout << "[" << task["id"] << "] Is not completed"
+				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
+						<< task["id"] << "] Is not completed" << TODOL_RESET
 						<< std::endl;
 			}
 		}
 	}
 
 	if (!writeDatabase(db)) {
-		std::cerr << "Failed to commit changes" << std::endl;
+		TODOL_ERROR("Failed to commit changes");
 		return EXIT_FAILURE;
 	}
 
