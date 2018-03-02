@@ -2,3 +2,5 @@ todol
 .project
 .cproject
 .settings
+todol-server
+todol-socket

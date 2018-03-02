@@ -6,6 +6,7 @@
 #include <climits>
 #include <cstring>
 #include <pwd.h>
+#include "todol_web.hpp"
 
 static char s_userHomeBuffer[PATH_MAX + 1] = { 0 };
 
@@ -251,7 +252,8 @@ int todol::cmdUndo(const std::list<int> &indices) {
 
 		if (r) {
 			if (((flags_t) task["flags"]) & TODOL_FLAG_COMPLETE) {
-				task["flags"] = ((flags_t) task["flags"]) & ~TODOL_FLAG_COMPLETE;
+				task["flags"] =
+						((flags_t) task["flags"]) & ~TODOL_FLAG_COMPLETE;
 				std::cout << "Uncompleted [" << task["id"] << "]" << std::endl;
 			} else {
 				std::cout << "[" << task["id"] << "] Is not completed"
@@ -279,82 +281,4 @@ bool todol::parseIndices(const std::string &idxString,
 	}
 
 	return true;
-}
-
-int main(int argc, char **argv) {
-	if (argc < 2) {
-		return todol::cmdLs();
-	}
-
-	if (!strcmp(argv[1], "ls")) {
-		return todol::cmdLs();
-	}
-
-	if (!strcmp(argv[1], "add")) {
-		if (argc < 3) {
-			return EXIT_FAILURE;
-		}
-
-		std::string res = argv[2];
-
-		for (int i = 3; i < argc; ++i) {
-			res += " " + std::string(argv[i]);
-		}
-
-		return todol::cmdAdd(res);
-	}
-
-	if (!strcmp(argv[1], "rm")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
-
-		std::list<int> ids;
-
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
-
-		return todol::cmdRm(ids);
-	}
-
-	if (!strcmp(argv[1], "clear")) {
-		if (argc != 2) {
-			return EXIT_FAILURE;
-		}
-
-		return todol::cmdClear();
-	}
-
-	if (!strcmp(argv[1], "do")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
-
-		std::list<int> ids;
-
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
-
-		return todol::cmdDo(ids);
-	}
-
-	if (!strcmp(argv[1], "undo")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
-
-		std::list<int> ids;
-
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
-
-		return todol::cmdUndo(ids);
-	}
-
-	std::cerr << "Unknown command: " << argv[1] << std::endl;
-
-	return EXIT_FAILURE;
 }
