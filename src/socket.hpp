@@ -8,15 +8,14 @@ public:
 	TcpSocket(const std::string &dest, uint16_t port);
 	TcpSocket();
 	TcpSocket(const TcpSocket &other) = delete;
-	TcpSocket(TcpSocket &&other);
 
 	~TcpSocket();
 
 	void close();
 	void fromDescriptor(const struct sockaddr_in &sa, int fd);
 
-	size_t read(void *buf, size_t sz);
-	size_t write(void *buf, size_t sz);
+	ssize_t read(void *buf, size_t sz);
+	ssize_t write(const void *buf, size_t sz);
 
 private:
 
@@ -33,7 +32,7 @@ public:
 	TcpServerSocket(uint16_t port);
 	~TcpServerSocket();
 
-	bool listen(TcpSocket &sock);
+	bool accept(int &fd, struct sockaddr_in &sa);
 
 private:
 

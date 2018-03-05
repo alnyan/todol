@@ -12,28 +12,15 @@ TcpSocket::TcpSocket(const std::string &dest, uint16_t port)
 	}
 }
 
-TcpSocket::TcpSocket(TcpSocket &&other)
-		: m_fd { other.m_fd }, m_addr { other.m_addr }, m_port { other.m_port }, m_sockaddr {
-				other.m_sockaddr } {
-	std::cout << "Move " << this << std::endl;
-}
-
 TcpSocket::TcpSocket()
 		: m_fd { -1 }, m_addr { "" }, m_port { 0 } {
 }
 
 TcpSocket::~TcpSocket() {
-	std::cout << "Destructor " << this << std::endl;
-
-	if (m_fd != -1) {
-		shutdown(m_fd, SHUT_RDWR);
-		::close(m_fd);
-	}
+	close();
 }
 
 void TcpSocket::close() {
-	std::cout << "Close " << this << std::endl;
-
 	if (m_fd != -1) {
 		shutdown(m_fd, SHUT_RDWR);
 		::close(m_fd);
@@ -77,11 +64,22 @@ void TcpSocket::fromDescriptor(const sockaddr_in &sa, int fd) {
 	m_sockaddr = sa;
 }
 
-size_t TcpSocket::read(void *buf, size_t sz) {
-	return ::recv(m_fd, buf, sz, 0);
+ssize_t TcpSocket::read(void *buf, size_t sz) {
+	if (m_fd == -1) {
+		throw std::runtime_error { "Read from closed socket" };
+	}
+	auto v = ::recv(m_fd, buf, sz, MSG_NOSIGNAL);
+    if (v == -1) {
+        throw std::runtime_error { "Read from closed socket" };
+    }
+
+    return v;
 }
 
-size_t TcpSocket::write(void *buf, size_t sz) {
+ssize_t TcpSocket::write(const void *buf, size_t sz) {
+	if (m_fd == -1) {
+		throw std::runtime_error { "Write to closed socket" };
+	}
 	return ::send(m_fd, buf, sz, 0);
 }
 
@@ -142,18 +140,14 @@ bool TcpServerSocket::openSocket() {
 	return true;
 }
 
-bool TcpServerSocket::listen(TcpSocket &sock) {
-	struct sockaddr_in sa;
+bool TcpServerSocket::accept(int &fd, struct sockaddr_in &sa) {
 	socklen_t l = sizeof(struct sockaddr_in);
-	int fd = -1;
 	// TODO: use select
 
-	if ((fd = accept(m_fd, reinterpret_cast<struct sockaddr *>(&sa), &l))
+	if ((fd = ::accept(m_fd, reinterpret_cast<struct sockaddr *>(&sa), &l))
 			== -1) {
 		return false;
 	}
-
-	sock.fromDescriptor(sa, fd);
 
 	return true;
 }

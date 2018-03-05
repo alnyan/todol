@@ -48,7 +48,7 @@ void initDatabase(DbHandle &j);
 
 int addTask(DbHandle &db, const std::string &title, uint32_t flags);
 bool rmTask(DbHandle &db, int n);
-void setFlags(DbHandle &db, int n, uint32_t flags);
+bool setFlags(DbHandle &db, int n, uint32_t flags);
 int findTask(const DbHandle &db, const std::string &title, Task &t);
 bool getTask(const DbHandle &db, int n, Task &t);
 std::list<Task> lsTasks(DbHandle &db);

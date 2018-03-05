@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tasks</title>
+        <style>
+            .task-link {
+                color: black;
+            }
+
+            .task-link-complete {
+                color: green;
+            }
+        </style>
+        <script type="text/javascript">
+            function completeDone(el, t) {
+                console.log("Complete done");
+                console.log(t);
+
+                el.className = (t["flags"] & 1) === 1 ? "task-link-complete" : "task-link";
+            }
+
+            function completeItem(el, t, cf) {
+                var req = new XMLHttpRequest();
+
+                if (cf) {
+                    t["flags"] |= 1;
+                } else {
+                    t["flags"] &= ~1;
+                }
+
+                req.addEventListener("load", () => completeDone(el, t));
+                req.open("PATCH", "/tasks.json");
+                req.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+                req.send(JSON.stringify({
+                    "id": t["id"],
+                    "flags": t["flags"]
+                }));
+            }
+
+            function loadFinished() {
+                const res = JSON.parse(this.response);
+
+                if (res["status"] !== "success") {
+                    return;
+                }
+
+                const tasks = res["data"]["tasks"];
+
+                tasks.forEach((task) => {
+                    var root = document.getElementsByClassName("root-container")[0];
+                    var itemDiv = document.createElement("div");
+                    itemDiv.className = "task-item";
+
+                    var taskLink = document.createElement("a");
+
+                    if (task["flags"] & 1 !== 0) {
+                        taskLink.className = "task-link-complete";
+                    } else {
+                        taskLink.className = "task-link";
+                    }
+                    taskLink.href = "#";
+                    taskLink.onclick = function(ev) {
+                        ev.preventDefault();
+                        completeItem(taskLink, task, (task["flags"] & 1) === 0);
+                    };
+                    taskLink.text = task["title"];
+
+                    itemDiv.appendChild(taskLink);
+
+                    root.appendChild(itemDiv);
+                });
+            }
+
+            function load() {
+                clearItems();
+                var req = new XMLHttpRequest();
+
+                req.addEventListener("load", loadFinished);
+                req.open("GET", "/tasks.json");
+                req.send();
+            }
+
+            function clearItems() {
+                var root = document.getElementsByClassName("root-container")[0];
+                while (root.firstChild) {
+                    root.removeChild(root.firstChild);
+                }
+            }
+
+            function addFinished() {
+                console.log("Adding finished, reloading");
+                load();
+            }
+
+            function addItem(ev) {
+                ev.preventDefault();
+
+                var v = document.getElementById("task-title");
+
+                var req = new XMLHttpRequest();
+
+                req.addEventListener("load", addFinished);
+                req.open("POST", "/tasks.json");
+                req.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+                req.send(JSON.stringify({
+                    "title": v.value
+                }));
+
+                v.value = "";
+            }
+
+            function init() {
+                var addItemBtn = document.getElementById("task-add");
+
+                addItemBtn.addEventListener("click", addItem);
+
+                load();
+            }
+
+            window.addEventListener("DOMContentLoaded", init, false);
+        </script>
+    </head>
+    <body>
+        <div class="root-container">
+        </div>
+        <div class="controls-container">
+            <input class="controls-title" type="text" id="task-title" />
+            <a href="#" id="task-add">ADD ITEM</a>
+        </div>
+    </body>
+</html>

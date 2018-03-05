@@ -18,11 +18,16 @@ int main(int argc, char **argv) {
 
 	s_running = 1;
 
+	int fd;
+	struct sockaddr_in sa;
+
 	while (s_running) {
-		if (!serv.listen(sock)) {
+		if (!serv.accept(fd, sa)) {
 			std::cerr << "Listen failed" << std::endl;
 			return EXIT_FAILURE;
 		}
+
+		sock.fromDescriptor(sa, fd);
 
 		auto r = sock.read(buf, 128);
 		auto w = sock.write(buf, 128);
