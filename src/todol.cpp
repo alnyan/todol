@@ -1,5 +1,9 @@
-#if WITH_WEB
+#ifdef WITH_WEB
 #include "todol_web.hpp"
+#endif
+#ifdef WITH_AT
+#include "todol_at.hpp"
+#include "timeutil.hpp"
 #endif
 #include <sys/stat.h>
 #include "todol.hpp"
@@ -74,7 +78,7 @@ void todol::initDatabase(todol::DbHandle &j) {
 }
 
 int todol::addTask(todol::DbHandle &db, const std::string &title,
-		uint32_t flags) {
+		uint32_t flags, timestamp_t t) {
 	if (!db.json["tasks"].is_array()) {
 		db.json["tasks"] = njson::array();
 	}
@@ -82,10 +86,13 @@ int todol::addTask(todol::DbHandle &db, const std::string &title,
 	int id = db.json["counter"];
 	db.json["counter"] = id + 1;
 
-	db.json["tasks"].push_back(
-			njson { { "title", title }, { "timestamp", time(nullptr) }, {
-					"flags",
-					flags }, { "id", id } });
+    njson task;
+    task["title"] = title;
+    task["timestamp"] = ::time(nullptr);
+    task["flags"] = flags;
+    task["id"] = id;
+
+	db.json["tasks"].push_back(task);
 
 	return id;
 }
@@ -106,6 +113,45 @@ std::list<todol::Task> todol::lsTasks(todol::DbHandle &db) {
 	return res;
 }
 
+#ifdef WITH_AT
+bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
+    todol::Task task;
+
+    task.id = -1;
+
+    for (auto &ent: db.json["tasks"]) {
+        if (ent["id"] == n) {
+            task.title = ent["title"];
+            task.id = ent["id"];
+            task.timestamp = ent["timestamp"];
+            task.flags = ent["flags"];
+
+            if (ent.find("atId") != ent.end()) {
+                TODOL_ERROR("Task [" << n << "] already has notification");
+                return false;
+            }
+
+            task.notifyTime = t;
+            int id = todol::at::addAtTask('T', task);
+
+            if (id != -1) {
+                ent["atId"] = task.atId;
+                ent["notifyTime"] = task.notifyTime;
+
+                std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) <<
+                    "Added notification for [" << id << "]" << TODOL_RESET << std::endl;
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    TODOL_ERROR("Task [" << n << "] does not exist");
+    return false;
+}
+#endif
+
 int todol::cmdAdd(const std::string &title) {
 	Task t;
 	DbHandle db;
@@ -119,7 +165,7 @@ int todol::cmdAdd(const std::string &title) {
 		initDatabase(db);
 	}
 
-	int id = addTask(db, title, 0);
+	int id = addTask(db, title, 0, 0);
 
 	std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "Added [" << id
 			<< "]" << TODOL_RESET << std::endl;
@@ -285,6 +331,31 @@ int todol::cmdUndo(const std::list<int> &indices) {
 
 	return EXIT_SUCCESS;
 }
+
+#ifdef WITH_AT
+int todol::cmdNotify(int n, const std::string &time, const std::string &date) {
+    auto t = time::parseTime(time, date);
+
+    DbHandle db;
+
+    if (!readDatabase(db)) {
+        TODOL_ERROR("Database does not exist");
+        return EXIT_FAILURE;
+    }
+
+    if (!addNotify(db, n, (timestamp_t) t)) {
+        TODOL_ERROR("Failed to add notify to [" << n << "]");
+        return EXIT_FAILURE;
+    }
+
+    if (!writeDatabase(db)) {
+        TODOL_ERROR("Failed to commit changes");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+#endif
 
 bool todol::parseIndices(const std::string &idxString,
 		std::list<int> &indices) {

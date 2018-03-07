@@ -87,6 +87,18 @@ int main(int argc, char **argv) {
 	}
 #endif
 
+#ifdef WITH_AT
+    if (!strcmp(argv[1], "notify")) {
+        switch (argc) {
+            case 4:
+                return todol::cmdNotify(atoi(argv[2]), argv[3], "");
+            case 5:
+                return todol::cmdNotify(atoi(argv[2]), argv[3], argv[4]);
+            default:
+                return EXIT_FAILURE;
+        }
+    }
+#endif
 	TODOL_ERROR("Unknown command: " << argv[1]);
 
 	return EXIT_FAILURE;
