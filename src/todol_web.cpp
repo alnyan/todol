@@ -171,6 +171,17 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                     return true;
                 }
 
+                auto reqJson = njson::parse(req.text);
+
+                if (!reqJson["title"].is_string()) {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Bad request"}
+                    }).dump(4, ' ', false);
+
+                    return true;
+                }
+
                 DbHandle db;
 
                 if (!readDatabase(db)) {
@@ -179,17 +190,6 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                         {"message", "Failed to read database"}
                     }).dump(4, ' ', false);
                     s_cacheValid = false;
-
-                    return true;
-                }
-
-                auto reqJson = njson::parse(req.text);
-
-                if (!reqJson["title"].is_string()) {
-                    res.text = njson({
-                        {"status", "error"},
-                        {"message", "Bad request"}
-                    }).dump(4, ' ', false);
 
                     return true;
                 }
@@ -204,7 +204,7 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                     return true;
                 }
 
-                 if (!writeDatabase(db)) {
+                if (!writeDatabase(db)) {
                     res.text = njson({
                         {"status", "error"},
                         {"message", "Failed to write database"}
@@ -213,6 +213,8 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
 
                     return true;
                 }
+
+                std::cout << "Added task" << std::endl;
 
                 s_taskCache = db.json;
 
@@ -278,6 +280,86 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                 return true;
             }
         }
+    case HttpRequest::HTTP_DELETE:
+        {
+            if (req.url == "/tasks.json") {
+                res.contentType = "application/json";
+
+                if (req.contentType != "application/json") {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Bad request"}
+                    }).dump(4, ' ', false);
+
+                    s_cacheValid = false;
+                    return true;
+                }
+
+                std::cout << req.text << std::endl;
+                auto reqJson = njson::parse(req.text);
+
+                if (!reqJson["id"].is_number()) {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Bad request"}
+                    }).dump(4, ' ', false);
+
+                    s_cacheValid = false;
+
+                    return true;
+                }
+
+                DbHandle db;
+
+                if (!readDatabase(db)) {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Failed to read database"}
+                    }).dump(4, ' ', false);
+                    s_cacheValid = false;
+
+                    return true;
+                }
+
+                int idx = reqJson["id"];
+                size_t oldSize = db.json["tasks"].size();
+                db.json["tasks"].erase(
+			        std::remove_if(db.json["tasks"].begin(), db.json["tasks"].end(),
+					    [idx](const njson &t) -> bool {
+						    int id = t["id"];
+						    if (id == idx) {
+							    std::cout << "Removing [" << id << "] " << t["title"] << std::endl;
+						    }
+						    return idx == id;
+				}), db.json["tasks"].end());
+
+                if (db.json["tasks"].size() == oldSize) {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Failed to remove task"}
+                    });
+                    s_cacheValid = false;
+
+                    return true;
+                }
+
+                if (!writeDatabase(db)) {
+                    res.text = njson({
+                        {"status", "error"},
+                        {"message", "Failed to write database"}
+                    }).dump(4, ' ', false);
+                    s_cacheValid = false;
+
+                    return true;
+                }
+
+                s_taskCache = db.json;
+
+                res.text = njson({{"status", "success"}}).dump(4, ' ', false);
+
+                return true;
+            }
+        }
     default:
         break;
     }
@@ -296,7 +378,7 @@ bool todol::web::readRequestPayload(TcpSocket &socket, todol::web::HttpRequest &
     }
 
     while (totalBread < req.contentLength) {
-        size_t bread = socket.read(buf, toRead - 1);
+        size_t bread = socket.read(buf, toRead);
 
         if (bread == 0) {
             break;
@@ -342,13 +424,13 @@ bool todol::web::parseRequestHeaderLine(const std::string &line, HttpRequest &re
 
     std::string key = std::string(p, e - p);
 
-    if (*(e + 1) == ' ') {
+    while (*(e + 1) == ' ') {
         ++e;
     }
 
     std::string value = std::string(e);
 
-    std::cout << "Key: " << key << ", Value: " << value << std::endl;
+    //std::cout << "Key: " << key << ", Value: " << value << std::endl;
     if (key == "Content-Length") {
         size_t sz = atoi(value.c_str());
 
@@ -358,12 +440,15 @@ bool todol::web::parseRequestHeaderLine(const std::string &line, HttpRequest &re
     } else if (key == "Content-Type") {
         const char *x = strchr(e, ';');
         // Drop non-mime part (XXX)
+        while (*e == ' ') {
+            ++e;
+        }
         value = std::string(e, x - e);
 
         req.contentType = value;
     }
 
-    std::cout << "End line" << std::endl;
+    //std::cout << "End line" << std::endl;
 
     return false;
 }
@@ -438,8 +523,8 @@ bool todol::web::parseRequestHeaders(TcpSocket &socket, const std::string &first
         p = e + 1;
     }
 
-    std::cout << "Request content length: " << req.contentLength << ", type: " <<
-        req.contentType << std::endl;
+    //std::cout << "Request content length: " << req.contentLength << ", type: " <<
+        //req.contentType << std::endl;
     req.text = stolenPayload;
 
     return true;
@@ -468,6 +553,10 @@ bool todol::web::parseRequestStatusLine(const std::string &line, HttpRequest &re
         req.method = HttpRequest::HTTP_GET;
     } else if (strncmp(l, "PATCH", sz) == 0) {
         req.method = HttpRequest::HTTP_PATCH;
+    } else if (strncmp(l, "POST", sz) == 0) {
+        req.method = HttpRequest::HTTP_POST;
+    } else if (strncmp(l, "DELETE", sz) == 0) {
+        req.method = HttpRequest::HTTP_DELETE;
     } else {
         std::cerr << "Unknown request kind " << l << std::endl;
         return false;
