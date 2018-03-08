@@ -53,9 +53,9 @@ void initDatabase(DbHandle &j);
 int addTask(DbHandle &db, const std::string &title, uint32_t flags, timestamp_t nt);
 bool rmTask(DbHandle &db, int n);
 bool setFlags(DbHandle &db, int n, uint32_t flags);
-int findTask(const DbHandle &db, const std::string &title, Task &t);
-bool getTask(const DbHandle &db, int n, Task &t);
-std::list<Task> lsTasks(DbHandle &db);
+//int findTask(const DbHandle &db, const std::string &title, Task &t);
+//bool getTask(const DbHandle &db, int n, Task &t);
+//std::list<Task> lsTasks(DbHandle &db);
 #ifdef WITH_AT
 bool addNotify(DbHandle &db, int n, timestamp_t t);
 bool rmNotify(DbHandle &db, int n);

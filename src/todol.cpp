@@ -97,21 +97,21 @@ int todol::addTask(todol::DbHandle &db, const std::string &title,
 	return id;
 }
 
-int todol::findTask(const todol::DbHandle &db, const std::string &title,
-		todol::Task &t) {
-	return -1;
-}
+//int todol::findTask(const todol::DbHandle &db, const std::string &title,
+		//todol::Task &t) {
+	//return -1;
+//}
 
-std::list<todol::Task> todol::lsTasks(todol::DbHandle &db) {
-	std::list<Task> res;
+//std::list<todol::Task> todol::lsTasks(todol::DbHandle &db) {
+	//std::list<Task> res;
 
-	for (const auto &ent : db.json["tasks"]) {
-		res.push_back(
-				{ ent["title"], ent["timestamp"], ent["flags"], ent["id"] });
-	}
+	//for (const auto &ent : db.json["tasks"]) {
+		////res.push_back(
+				////{ ent["title"], ent["timestamp"], ent["flags"], ent["id"] });
+	//}
 
-	return res;
-}
+	//return res;
+//}
 
 #ifdef WITH_AT
 bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
@@ -157,10 +157,10 @@ int todol::cmdAdd(const std::string &title) {
 	DbHandle db;
 
 	if (readDatabase(db)) {
-		if (findTask(db, title, t) != -1) {
-			TODOL_ERROR("Task \"" << title << "\" already exists");
-			return EXIT_FAILURE;
-		}
+		//if (findTask(db, title, t) != -1) {
+			//TODOL_ERROR("Task \"" << title << "\" already exists");
+			//return EXIT_FAILURE;
+		//}
 	} else {
 		initDatabase(db);
 	}
@@ -186,19 +186,18 @@ int todol::cmdLs() {
 		return EXIT_FAILURE;
 	}
 
-	auto ls = lsTasks(db);
 	char buf[512];
 
-	for (const auto &task : ls) {
-		if (task.flags & TODOL_FLAG_COMPLETE) {
+	for (const auto &task : db.json["tasks"]) {
+		if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "["
-					<< task.id << "]" << TODOL_RESET;
+					<< task["id"] << "]" << TODOL_RESET;
 		} else {
-			std::cout << "[" << task.id << "]";
+			std::cout << "[" << task["id"] << "]";
 		}
-		std::cout << "\t" << TODOL_COLOR(bold) << task.title << TODOL_RESET
+		std::cout << "\t" << TODOL_COLOR(bold) << task["title"] << TODOL_RESET
 				<< std::endl;
-		time_t t = task.timestamp;
+		time_t t = task["timestamp"];
 		struct tm lt;
 		localtime_r(&t, &lt);
 		if (strftime(buf, 512, "%c", &lt) == 0) {
@@ -206,7 +205,7 @@ int todol::cmdLs() {
 					<< "Error happened" << TODOL_RESET << std::endl;
 			return EXIT_FAILURE;
 		}
-		if (task.flags & TODOL_FLAG_COMPLETE) {
+		if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "+++"
 					<< TODOL_RESET;
 		}
@@ -273,16 +272,16 @@ int todol::cmdDo(const std::list<int> &indices) {
 	}
 
 	for (auto &task : db.json["tasks"]) {
-		bool r = std::find(indices.begin(), indices.end(), (int) task["id"])
+		bool r = std::find(indices.begin(), indices.end(), static_cast<id_t>(task["id"]))
 				!= indices.end();
 
 		if (r) {
-			if (((flags_t) task["flags"]) & TODOL_FLAG_COMPLETE) {
+			if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
 						<< task["id"] << "] Is already completed" << TODOL_RESET
 						<< std::endl;
 			} else {
-				task["flags"] = ((flags_t) task["flags"]) | TODOL_FLAG_COMPLETE;
+				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
 						<< "Completed " << "[" << task["id"] << "]"
 						<< TODOL_RESET << std::endl;
@@ -307,13 +306,13 @@ int todol::cmdUndo(const std::list<int> &indices) {
 	}
 
 	for (auto &task : db.json["tasks"]) {
-		bool r = std::find(indices.begin(), indices.end(), (int) task["id"])
+		bool r = std::find(indices.begin(), indices.end(), static_cast<id_t>(task["id"]))
 				!= indices.end();
 
 		if (r) {
-			if (((flags_t) task["flags"]) & TODOL_FLAG_COMPLETE) {
+			if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 				task["flags"] =
-						((flags_t) task["flags"]) & ~TODOL_FLAG_COMPLETE;
+						static_cast<flags_t>(task["flags"]) & ~TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << "Uncompleted [" << task["id"]
 						<< "]" << TODOL_RESET << std::endl;
 			} else {
@@ -343,7 +342,7 @@ int todol::cmdNotify(int n, const std::string &time, const std::string &date) {
         return EXIT_FAILURE;
     }
 
-    if (!addNotify(db, n, (timestamp_t) t)) {
+    if (!addNotify(db, n, static_cast<timestamp_t>(t))) {
         TODOL_ERROR("Failed to add notify to [" << n << "]");
         return EXIT_FAILURE;
     }

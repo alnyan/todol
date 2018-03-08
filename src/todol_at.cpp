@@ -64,7 +64,7 @@ static int exec(const std::string &cmd, const std::list<std::string> &args, std:
         close(fds[WRITE_END]);
         close(fds[READ_END]);
 
-        execvp(argv[0], (char *const *) argv);
+        execvp(argv[0], const_cast<char *const *>(argv));
 
         exit(1);
     }
@@ -99,7 +99,7 @@ static std::string stringifyTimestamp(todol::timestamp_t t) {
     struct tm *stp;
     char buf[4096];
 
-    if (!(stp = localtime_r((time_t *) &t, &stm))) {
+    if (!(stp = localtime_r(reinterpret_cast<time_t *>(&t), &stm))) {
         return std::string();
     }
 

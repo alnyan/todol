@@ -1,4 +1,4 @@
-CXXFLAGS:=$(if ${WITH_WEB},-DWITH_WEB -lpthread,) $(if ${WITHOUT_COLOR},,-DWITH_COLOR) $(if ${WITHOUT_AT},,-DWITH_AT)
+CXXFLAGS:=$(if ${WITH_WEB},-DWITH_WEB -lpthread,) $(if ${WITHOUT_COLOR},,-DWITH_COLOR) $(if ${WITHOUT_AT},,-DWITH_AT) -Wold-style-cast -Werror=old-style-cast
 SOURCES:=src/todol.cpp src/main.cpp $(if ${WITH_WEB},src/todol_web.cpp src/socket.cpp,) $(if ${WITHOUT_AT},,src/todol_at.cpp src/timeutil.cpp)
 
 all:
