@@ -156,15 +156,17 @@ std::list<int> todol::at::listTasks(char q) {
 }
 
 
-int todol::at::addAtTask(char q, todol::Task &t) {
+int todol::at::addAtTask(char q, njson &t) {
     int res = -1;
     int tmpfd = -1;
-    std::string taskCmd = "notify-send -t 0 \"" + t.title + "\"\n";
+    std::string tt = t["title"];
+    std::string taskCmd = "notify-send -t 0 \"" + tt + "\"\n";
     char tmpn[] = "/tmp/todol.tmp.XXXXXX";
 
     if ((tmpfd = mkstemp(tmpn)) == -1) {
         std::cerr << "Failed to open temporary file" << std::endl;
-        t.atId = -1;
+        // XXX: REMOVE atId FIELD OF njson HERE
+        //t.atId = -1;
         return -1;
     }
     write(tmpfd, taskCmd.c_str(), taskCmd.length());
@@ -172,35 +174,34 @@ int todol::at::addAtTask(char q, todol::Task &t) {
 
     std::string x;
     res = ::exec("at", { "-q", std::string(1, q), "-f", tmpn,
-            stringifyTimestamp(t.notifyTime) }, x);
+            stringifyTimestamp(t["notifyTime"]) }, x);
 
     if (res != 0) {
         std::cerr << "at failed" << std::endl;
-        std::cerr << "Commmand: at -q " << q << " -f " << tmpn << stringifyTimestamp(t.notifyTime)
-            << std::endl;
+        std::cerr << "Commmand: at -q " << q << " -f " << tmpn
+            << stringifyTimestamp(t["notifyTime"]) << std::endl;
         std::cerr << "Output: " << x << std::endl;
 
-        t.atId = -1;
+        // XXX: REMOVE atId FIELD OF nsjon HERE
         return -1;
     }
 
     int jobId = parseAddedJobId(x);
-    t.atId = jobId;
+    t["atId"] = jobId;
 
     remove(tmpn);
 
     return jobId;
 }
 
-bool todol::at::rmTask(char q, todol::Task &t) {
-    int taskAtId = t.atId;
+bool todol::at::rmTask(char q, njson &t) {
+    int taskAtId = t["atId"];
 
     if (taskAtId == -1) {
         return false;
     }
 
-    t.atId = -1;
-    t.notifyTime = 0;
+    // XXX: REMOVE atId AND notifyTime FIELDS OF njson HERE
     std::string x;
     int c = ::exec("atrm", {std::to_string(taskAtId)}, x);
 

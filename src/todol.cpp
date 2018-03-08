@@ -115,28 +115,28 @@ int todol::addTask(todol::DbHandle &db, const std::string &title,
 
 #ifdef WITH_AT
 bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
-    todol::Task task;
+    //todol::Task task;
 
-    task.id = -1;
+    //task.id = -1;
 
     for (auto &ent: db.json["tasks"]) {
         if (ent["id"] == n) {
-            task.title = ent["title"];
-            task.id = ent["id"];
-            task.timestamp = ent["timestamp"];
-            task.flags = ent["flags"];
+            //task.title = ent["title"];
+            //task.id = ent["id"];
+            //task.timestamp = ent["timestamp"];
+            //task.flags = ent["flags"];
 
             if (ent.find("atId") != ent.end()) {
                 TODOL_ERROR("Task [" << n << "] already has notification");
                 return false;
             }
 
-            task.notifyTime = t;
-            int id = todol::at::addAtTask('T', task);
+            ent["notifyTime"] = t;
+            int id = todol::at::addAtTask('T', ent);
 
             if (id != -1) {
-                ent["atId"] = task.atId;
-                ent["notifyTime"] = task.notifyTime;
+                //ent["atId"] = task.atId;
+                //ent["notifyTime"] = task.notifyTime;
 
                 std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) <<
                     "Added notification for [" << id << "]" << TODOL_RESET << std::endl;
@@ -153,7 +153,7 @@ bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
 #endif
 
 int todol::cmdAdd(const std::string &title) {
-	Task t;
+	//Task t;
 	DbHandle db;
 
 	if (readDatabase(db)) {

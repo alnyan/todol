@@ -28,16 +28,16 @@ using timestamp_t = uint64_t;
 using flags_t = uint32_t;
 using id_t = int32_t;
 
-struct Task {
-    std::string title;
-    timestamp_t timestamp;
-    flags_t flags;
-    id_t id;
-#ifdef WITH_AT
-    timestamp_t notifyTime;
-    int atId;
-#endif
-};
+//struct Task {
+    //std::string title;
+    //timestamp_t timestamp;
+    //flags_t flags;
+    //id_t id;
+//#ifdef WITH_AT
+    //timestamp_t notifyTime;
+    //int atId;
+//#endif
+//};
 
 struct DbHandle {
 	njson json;

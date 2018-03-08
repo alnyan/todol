@@ -4,9 +4,9 @@
 namespace todol {
 namespace at {
 
-int addAtTask(char q, todol::Task &t);
+int addAtTask(char q, njson &task);
 std::list<int> listTasks(char q);
-bool rmTask(char q, todol::Task &t);
+bool rmTask(char q, njson &t);
 
 }
 }
