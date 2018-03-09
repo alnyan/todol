@@ -138,8 +138,9 @@ bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
                 //ent["atId"] = task.atId;
                 //ent["notifyTime"] = task.notifyTime;
 
-                std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) <<
-                    "Added notification for [" << id << "]" << TODOL_RESET << std::endl;
+                std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
+                    << "Added notification for [" << id << "]" << ent["title"].get<std::string>()
+                    << TODOL_RESET << std::endl;
                 return true;
             }
 
@@ -279,13 +280,13 @@ int todol::cmdDo(const std::list<int> &indices) {
 		if (r) {
 			if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
-						<< task["id"] << "] Is already completed" << TODOL_RESET
-						<< std::endl;
+						<< task["id"] << "] `" << task["title"].get<std::string>()
+                        << "' Is already completed" << TODOL_RESET << std::endl;
 			} else {
 				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
 						<< "Completed " << "[" << task["id"] << "]"
-						<< TODOL_RESET << std::endl;
+                        << task["title"].get<std::string>()	<< TODOL_RESET << std::endl;
 			}
 		}
 	}
@@ -315,11 +316,11 @@ int todol::cmdUndo(const std::list<int> &indices) {
 				task["flags"] =
 						static_cast<flags_t>(task["flags"]) & ~TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << "Uncompleted [" << task["id"]
-						<< "]" << TODOL_RESET << std::endl;
+						<< "] " << task["title"].get<std::string>() << TODOL_RESET << std::endl;
 			} else {
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
-						<< task["id"] << "] Is not completed" << TODOL_RESET
-						<< std::endl;
+						<< task["id"] << "] `" << task["title"].get<std::string>()
+                        << "' Is not completed" << TODOL_RESET << std::endl;
 			}
 		}
 	}
