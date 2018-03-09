@@ -210,7 +210,9 @@ int todol::cmdLs() {
                         << TODOL_RESET << std::endl;
                 }
             } else {
-                std::cout << "\tNotify at " << buf << std::endl;
+                if (!static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
+                    std::cout << "\tNotify at " << buf << std::endl;
+                }
             }
         }
 #endif
@@ -293,6 +295,10 @@ int todol::cmdDo(const std::list<int> &indices) {
 						<< task["id"] << "] `" << task["title"].get<std::string>()
                         << "' Is already completed" << TODOL_RESET << std::endl;
 			} else {
+                if (at::rmTask('T', task["atId"])) {
+                    task.erase(task.find("atId"));
+                }
+
 				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
 						<< "Completed " << "[" << task["id"] << "] "
