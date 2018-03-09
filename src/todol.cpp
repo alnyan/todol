@@ -380,3 +380,16 @@ bool todol::parseIndices(const std::string &idxString,
 
 	return true;
 }
+
+int todol::cmdJson() {
+    DbHandle db;
+
+    if (!readDatabase(db)) {
+        TODOL_ERROR("Database does not exist");
+        return EXIT_FAILURE;
+    }
+
+    std::cout << db.json.dump(4, ' ', false) << std::endl;
+
+    return EXIT_SUCCESS;
+}

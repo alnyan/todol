@@ -77,6 +77,10 @@ int main(int argc, char **argv) {
 		return todol::cmdUndo(ids);
 	}
 
+    if (!strcmp(argv[1], "json")) {
+        return todol::cmdJson();
+    }
+
 #ifdef WITH_WEB
 	if (!strcmp(argv[1], "serve")) {
 		if (argc != 3) {

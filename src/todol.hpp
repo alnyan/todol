@@ -59,5 +59,6 @@ int cmdLs();
 int cmdClear();
 int cmdDo(const std::list<int> &indices);
 int cmdUndo(const std::list<int> &indices);
+int cmdJson();
 
 }
