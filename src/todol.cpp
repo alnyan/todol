@@ -223,7 +223,7 @@ int todol::cmdRm(const std::list<int> &ids) {
 	DbHandle db;
 
 	if (!readDatabase(db)) {
-		std::cerr << "Database does not exist" << std::endl;
+		TODOL_ERROR("Database does not exist");
 		return EXIT_FAILURE;
 	}
 
@@ -237,12 +237,19 @@ int todol::cmdRm(const std::list<int> &ids) {
 						if (r) {
 							std::cout << "Removing [" << id << "] "
                                 << t["title"].get<std::string>() << std::endl;
+#ifdef WITH_AT
+                                if (t.find("atId") != t.end()) {
+                                    if (!at::rmTask('T', t["atId"])) {
+                                        TODOL_ERROR("Failed to remove at task");
+                                    }
+                                }
+#endif
 						}
 						return r;
 					}), db.json["tasks"].end());
 
 	if (!writeDatabase(db)) {
-		std::cerr << "Failed to commit changes" << std::endl;
+		TODOL_ERROR("Failed to commit changes");
 		return EXIT_FAILURE;
 	}
 

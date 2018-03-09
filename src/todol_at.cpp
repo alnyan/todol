@@ -176,20 +176,9 @@ int todol::at::addAtTask(char q, njson &t) {
     return jobId;
 }
 
-bool todol::at::rmTask(char q, njson &t) {
-    int taskAtId = t["atId"];
-
-    if (taskAtId == -1) {
-        return false;
-    }
-
+bool todol::at::rmTask(char q, int atId) {
     std::string x;
-    int c = ::exec("atrm", {std::to_string(taskAtId)}, x);
-
-    if (c != 0) {
-        t.erase(t.find("atId"));
-        t.erase(t.find("notifyTime"));
-    }
+    int c = ::exec("atrm", {std::to_string(atId)}, x);
 
     return c == 0;
 }
