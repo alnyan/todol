@@ -97,35 +97,10 @@ int todol::addTask(todol::DbHandle &db, const std::string &title,
 	return id;
 }
 
-//int todol::findTask(const todol::DbHandle &db, const std::string &title,
-		//todol::Task &t) {
-	//return -1;
-//}
-
-//std::list<todol::Task> todol::lsTasks(todol::DbHandle &db) {
-	//std::list<Task> res;
-
-	//for (const auto &ent : db.json["tasks"]) {
-		////res.push_back(
-				////{ ent["title"], ent["timestamp"], ent["flags"], ent["id"] });
-	//}
-
-	//return res;
-//}
-
 #ifdef WITH_AT
 bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
-    //todol::Task task;
-
-    //task.id = -1;
-
     for (auto &ent: db.json["tasks"]) {
         if (ent["id"] == n) {
-            //task.title = ent["title"];
-            //task.id = ent["id"];
-            //task.timestamp = ent["timestamp"];
-            //task.flags = ent["flags"];
-
             if (ent.find("atId") != ent.end()) {
                 TODOL_ERROR("Task [" << n << "] already has notification");
                 return false;
@@ -135,11 +110,8 @@ bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
             int id = todol::at::addAtTask('T', ent);
 
             if (id != -1) {
-                //ent["atId"] = task.atId;
-                //ent["notifyTime"] = task.notifyTime;
-
                 std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
-                    << "Added notification for [" << id << "]" << ent["title"].get<std::string>()
+                    << "Added notification for [" << id << "] " << ent["title"].get<std::string>()
                     << TODOL_RESET << std::endl;
                 return true;
             }
@@ -154,14 +126,18 @@ bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
 #endif
 
 int todol::cmdAdd(const std::string &title) {
-	//Task t;
 	DbHandle db;
 
 	if (readDatabase(db)) {
-		//if (findTask(db, title, t) != -1) {
-			//TODOL_ERROR("Task \"" << title << "\" already exists");
-			//return EXIT_FAILURE;
-		//}
+	    auto it = std::find_if(db.json["tasks"].begin(), db.json["tasks"].end(),
+                [&title](const njson &task) -> bool {
+                    return task["title"] == title;
+                });
+
+        if (it != db.json["tasks"].end()) {
+            TODOL_ERROR("Task with such title already exists");
+            return EXIT_FAILURE;
+        }
 	} else {
 		initDatabase(db);
 	}
@@ -202,15 +178,42 @@ int todol::cmdLs() {
 		struct tm lt;
 		localtime_r(&t, &lt);
 		if (strftime(buf, 512, "%c", &lt) == 0) {
-			std::cerr << TODOL_COLOR(bold) << TODOL_COLOR(red)
-					<< "Error happened" << TODOL_RESET << std::endl;
-			return EXIT_FAILURE;
+		    TODOL_ERROR("Time formatting error");
+            return EXIT_FAILURE;
 		}
 		if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
 			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "+++"
 					<< TODOL_RESET;
 		}
 		std::cout << "\t" << buf << std::endl;
+#ifdef WITH_AT
+        if (task.find("notifyTime") != task.end()) {
+            t = task["notifyTime"];
+            localtime_r(&t, &lt);
+            if (strftime(buf, 512, "%c", &lt) == 0) {
+                TODOL_ERROR("Time formatting error");
+                return EXIT_FAILURE;
+            }
+
+            time_t ct;
+            if (!::time(&ct)) {
+                TODOL_ERROR("Failed to get current time");
+                return EXIT_FAILURE;
+            }
+
+            if (ct > t) {
+                if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
+                    std::cout << TODOL_COLOR(lightblack) << "\tNotified at " << buf << TODOL_RESET
+                        << std::endl;
+                } else {
+                    std::cout << TODOL_COLOR(lightred) << "\tNotified at " << buf
+                        << TODOL_RESET << std::endl;
+                }
+            } else {
+                std::cout << "\tNotify at " << buf << std::endl;
+            }
+        }
+#endif
 	}
 
 	return EXIT_SUCCESS;
@@ -285,7 +288,7 @@ int todol::cmdDo(const std::list<int> &indices) {
 			} else {
 				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
 				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
-						<< "Completed " << "[" << task["id"] << "]"
+						<< "Completed " << "[" << task["id"] << "] "
                         << task["title"].get<std::string>()	<< TODOL_RESET << std::endl;
 			}
 		}

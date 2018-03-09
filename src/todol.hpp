@@ -28,17 +28,6 @@ using timestamp_t = uint64_t;
 using flags_t = uint32_t;
 using id_t = int32_t;
 
-//struct Task {
-    //std::string title;
-    //timestamp_t timestamp;
-    //flags_t flags;
-    //id_t id;
-//#ifdef WITH_AT
-    //timestamp_t notifyTime;
-    //int atId;
-//#endif
-//};
-
 struct DbHandle {
 	njson json;
 };
@@ -53,9 +42,6 @@ void initDatabase(DbHandle &j);
 int addTask(DbHandle &db, const std::string &title, uint32_t flags, timestamp_t nt);
 bool rmTask(DbHandle &db, int n);
 bool setFlags(DbHandle &db, int n, uint32_t flags);
-//int findTask(const DbHandle &db, const std::string &title, Task &t);
-//bool getTask(const DbHandle &db, int n, Task &t);
-//std::list<Task> lsTasks(DbHandle &db);
 #ifdef WITH_AT
 bool addNotify(DbHandle &db, int n, timestamp_t t);
 bool rmNotify(DbHandle &db, int n);

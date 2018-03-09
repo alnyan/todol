@@ -10,22 +10,10 @@
 #include <string>
 #include <array>
 
-//std::string exec(const std::string &cmd) {
-    //std::array<char, 128> buffer;
-    //std::string result;
-    //std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
-    //if (!pipe) throw std::runtime_error("popen() failed!");
-    //while (!feof(pipe.get())) {
-        //if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
-            //result += buffer.data();
-    //}
-    //return result;
-//}
 #define READ_END 0
 #define WRITE_END 1
 
 static int exec(const std::string &cmd, const std::list<std::string> &args, std::string &result) {
-    //std::string result;
     pid_t pid;
     int fds[2];
 
@@ -165,8 +153,7 @@ int todol::at::addAtTask(char q, njson &t) {
 
     if ((tmpfd = mkstemp(tmpn)) == -1) {
         std::cerr << "Failed to open temporary file" << std::endl;
-        // XXX: REMOVE atId FIELD OF njson HERE
-        //t.atId = -1;
+        t.erase(t.find("atId"));
         return -1;
     }
     write(tmpfd, taskCmd.c_str(), taskCmd.length());
@@ -177,12 +164,7 @@ int todol::at::addAtTask(char q, njson &t) {
             stringifyTimestamp(t["notifyTime"]) }, x);
 
     if (res != 0) {
-        std::cerr << "at failed" << std::endl;
-        std::cerr << "Commmand: at -q " << q << " -f " << tmpn
-            << stringifyTimestamp(t["notifyTime"]) << std::endl;
-        std::cerr << "Output: " << x << std::endl;
-
-        // XXX: REMOVE atId FIELD OF nsjon HERE
+        t.erase(t.find("atId"));
         return -1;
     }
 
@@ -201,9 +183,13 @@ bool todol::at::rmTask(char q, njson &t) {
         return false;
     }
 
-    // XXX: REMOVE atId AND notifyTime FIELDS OF njson HERE
     std::string x;
     int c = ::exec("atrm", {std::to_string(taskAtId)}, x);
+
+    if (c != 0) {
+        t.erase(t.find("atId"));
+        t.erase(t.find("notifyTime"));
+    }
 
     return c == 0;
 }
