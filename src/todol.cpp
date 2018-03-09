@@ -266,6 +266,12 @@ int todol::cmdClear() {
 		return EXIT_FAILURE;
 	}
 
+    for (const auto &t: db.json["tasks"]) {
+        if (t.find("atId") != t.end()) {
+            at::rmTask('T', t["atId"]);
+        }
+    }
+
 	db.json["tasks"] = njson::array();
 	db.json["counter"] = 0;
 
@@ -285,6 +291,8 @@ int todol::cmdDo(const std::list<int> &indices) {
 		return EXIT_FAILURE;
 	}
 
+    char buf[256];
+
 	for (auto &task : db.json["tasks"]) {
 		bool r = std::find(indices.begin(), indices.end(), static_cast<id_t>(task["id"]))
 				!= indices.end();
@@ -295,8 +303,23 @@ int todol::cmdDo(const std::list<int> &indices) {
 						<< task["id"] << "] `" << task["title"].get<std::string>()
                         << "' Is already completed" << TODOL_RESET << std::endl;
 			} else {
-                if (at::rmTask('T', task["atId"])) {
-                    task.erase(task.find("atId"));
+                if (task.find("atId") != task.end()) {
+                    if (at::rmTask('T', task["atId"])) {
+                        struct tm lt;
+                        time_t t = task["notifyTime"];
+
+                        localtime_r(&t, &lt);
+                        if (strftime(buf, 256, "%c", &lt) == 0) {
+                            TODOL_ERROR("Time formatting error");
+                            return EXIT_FAILURE;
+                        }
+
+                        std::cout << "Cancelled notification at " << buf << std::endl;
+                        task.erase(task.find("atId"));
+                        task.erase(task.find("notifyTime"));
+                    } else {
+                        TODOL_ERROR("Failed to remove at task for [" << task["id"] << "]");
+                    }
                 }
 
 				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
