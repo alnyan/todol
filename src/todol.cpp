@@ -195,8 +195,8 @@ int todol::cmdLs() {
 		} else {
 			std::cout << "[" << task["id"] << "]";
 		}
-		std::cout << "\t" << TODOL_COLOR(bold) << task["title"] << TODOL_RESET
-				<< std::endl;
+		std::cout << "\t" << TODOL_COLOR(bold) << task["title"].get<std::string>()
+            << TODOL_RESET << std::endl;
 		time_t t = task["timestamp"];
 		struct tm lt;
 		localtime_r(&t, &lt);
