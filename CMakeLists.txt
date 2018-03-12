@@ -6,6 +6,7 @@ option(WITH_WEB "Include simple task web-server" OFF)
 option(WITH_COLOR "Include terminal color support (xterm)" ON)
 
 set(SOURCES src/main.cpp src/todol.cpp src/todol.hpp)
+set(LIBRARIES "")
 
 if (${WITH_COLOR})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_COLOR")
@@ -15,6 +16,7 @@ endif ()
 if (${WITH_WEB})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_WEB")
     set(SOURCES ${SOURCES} src/socket.cpp src/socket.hpp src/todol_web.cpp src/todol_web.hpp)
+    set(LIBRARIES ${LIBRARIES} pthread)
 endif ()
 
 if (${WITH_AT})
@@ -23,5 +25,6 @@ if (${WITH_AT})
 endif ()
 
 add_executable(todol ${SOURCES})
+target_link_libraries(todol ${LIBRARIES})
 
 install(TARGETS todol DESTINATION bin)

@@ -124,12 +124,7 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
     switch (req.method) {
     case HttpRequest::HTTP_GET:
         {
-            if (req.url == "/") {
-                res.contentType = "text/html";
-                res.fd = open("index.html", O_RDONLY);
-
-                return true;
-            } else if (req.url == "/tasks.json") {
+            if (req.url == "/tasks.json") {
                 res.contentType = "application/json";
 
                 if (!s_cacheValid) {
@@ -194,7 +189,7 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                     return true;
                 }
 
-                if (addTask(db, reqJson["title"], 0) == -1) {
+                if (addTask(db, reqJson["title"], 0, 0) == -1) {
                     res.text = njson({
                         {"status", "error"},
                         {"message", "Failed to add task"}
