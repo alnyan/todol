@@ -11,7 +11,9 @@ Building
 --------
 
 ```bash
-    $ make
+    $ mkdir build && cd build
+    $ cmake ..
+    $ make && sudo make install
 ```
 
 Usage
