@@ -4,6 +4,26 @@
 #include "todol.hpp"
 #include <iostream>
 
+static const std::string s_helpMessage =
+    "Usage: todol <command> ...\n"
+    "Possible commands:\n"
+    "\t* ls (or nothing) - outputs list of tasks\n"
+    "\t* add <title> - adds a task to the list\n"
+    "\t* rm <N> - removes task N from the list\n"
+    "\t* clear - removes all tasks\n"
+    "\t* do <N> - marks task N as completed\n"
+    "\t* undo <N> - removes complete flag from task N\n"
+    "\t* help - prints this message\n"
+#ifdef WITH_AT
+    "\t* notify <N> <TIME> [DATE] - adds a notification for task N\n"
+#endif
+    ;
+
+int printHelp() {
+    std::cerr << s_helpMessage;
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv) {
 	if (argc < 2) {
 		return todol::cmdLs();
@@ -79,6 +99,10 @@ int main(int argc, char **argv) {
 
     if (!strcmp(argv[1], "json")) {
         return todol::cmdJson();
+    }
+
+    if (!strcmp(argv[1], "help")) {
+        return printHelp();
     }
 
 #ifdef WITH_WEB
