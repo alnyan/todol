@@ -148,6 +148,14 @@ bool todol::web::HttpServer::process(struct sockaddr_in &sa, const todol::web::H
                         }).dump(4, ' ', false);
 
                 return true;
+            } else {
+                res.contentType = "application/json";
+
+                res.text = njson({
+                            {"status", "error"},
+                            {"message", "unkown function: " + req.url}
+                        }).dump(4, ' ', false);
+                return true;
             }
 
             break;
@@ -461,7 +469,6 @@ bool todol::web::parseRequestHeaders(TcpSocket &socket, const std::string &first
         size_t stolenPayloadSize = strlen(p) - (e2 - p);
 
         stolenPayload = std::string(e2, stolenPayloadSize);
-        std::cout << "FUCKUP ZONE ENTERED" << std::endl;
     }
 
     const char *e = strchr(p, '\n');
