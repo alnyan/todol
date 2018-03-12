@@ -23,13 +23,6 @@ Usage
     $ todol <command> ...
 ```
 
-Possible commands:
-
-* add <Text here> — adds a to-do entry to list
-* do <N> — marks entry #N as _DONE_
-* undo <N> — reverse for "do", removes _DONE_ status from entry #N
-* ls (or no command) — shows list of current tasks
-* clear — removes all current tasks
-* help — prints help message __NYI__
+For the list of possible commands refer to `help` command
 
 Also, aliasing (like `alias t=todol`) is recommended for easier usage.
