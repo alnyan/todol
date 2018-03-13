@@ -1,5 +1,5 @@
 project(todol)
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.7)
 
 option(WITH_AT "Include at/libnotify notification support" ON)
 option(WITH_WEB "Include simple task web-server" OFF)
