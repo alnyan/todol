@@ -1,6 +1,8 @@
 project(todol)
 cmake_minimum_required(VERSION 3.7)
 
+set(CMAKE_CXX_STANDARD 11)
+
 option(WITH_AT "Include at/libnotify notification support" ON)
 option(WITH_WEB "Include simple task web-server" OFF)
 option(WITH_COLOR "Include terminal color support (xterm)" ON)
