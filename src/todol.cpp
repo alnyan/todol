@@ -210,7 +210,7 @@ int todol::cmdLs() {
                         << TODOL_RESET << std::endl;
                 }
             } else {
-                if (!static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
+                if (!(static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE)) {
                     std::cout << "\tNotify at " << buf << std::endl;
                 }
             }
