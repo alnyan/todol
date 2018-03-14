@@ -97,10 +97,6 @@ int main(int argc, char **argv) {
 		return todol::cmdUndo(ids);
 	}
 
-    if (!strcmp(argv[1], "json")) {
-        return todol::cmdJson();
-    }
-
     if (!strcmp(argv[1], "help")) {
         return printHelp();
     }

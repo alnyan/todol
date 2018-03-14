@@ -38,158 +38,166 @@ bool todol::fileExists(const std::string &path) {
 	return stat(path.c_str(), &s) == 0;
 }
 
-bool todol::readDatabase(todol::DbHandle &j) {
-	std::ifstream s(std::string(userHome()) + "/.todol/db.json");
-
-	if (!s) {
-		return false;
-	}
-
-	j.json = nlohmann::json::parse(s);
-
-	return true;
+todol::DbHandle todol::open(const std::string &n) {
+    return DbHandle(new JsonStorageProvider(n));
 }
 
-bool todol::writeDatabase(todol::DbHandle &j) {
-	std::string p = userHome();
-	p += "/.todol";
+//bool todol::readDatabase(todol::DbHandle &j) {
+	//std::ifstream s(std::string(userHome()) + "/.todol/db.json");
 
-	if (!fileExists(p)) {
-		if (mkdir(p.c_str(), 0744) != 0) {
-			return false;
-		}
-	}
+	//if (!s) {
+		//return false;
+	//}
 
-	p += "/db.json";
+	//j.json = nlohmann::json::parse(s);
 
-	std::ofstream s(p);
+	//return true;
+//}
 
-	if (!s) {
-		return false;
-	}
+//bool todol::writeDatabase(todol::DbHandle &j) {
+	//std::string p = userHome();
+	//p += "/.todol";
 
-	s << j.json.dump(4, ' ', false);
+	//if (!fileExists(p)) {
+		//if (mkdir(p.c_str(), 0744) != 0) {
+			//return false;
+		//}
+	//}
 
-	return true;
-}
+	//p += "/db.json";
 
-void todol::initDatabase(todol::DbHandle &j) {
-	j.json["counter"] = 0;
-}
+	//std::ofstream s(p);
+
+	//if (!s) {
+		//return false;
+	//}
+
+	//s << j.json.dump(4, ' ', false);
+
+	//return true;
+//}
+
+//void todol::initDatabase(todol::DbHandle &j) {
+	//j.json["counter"] = 0;
+//}
 
 int todol::addTask(todol::DbHandle &db, const std::string &title,
-		uint32_t flags, timestamp_t t) {
-	if (!db.json["tasks"].is_array()) {
-		db.json["tasks"] = njson::array();
-	}
+		uint32_t flags, time_t t) {
+	//if (!db.json["tasks"].is_array()) {
+		//db.json["tasks"] = njson::array();
+	//}
 
-	int id = db.json["counter"];
-	db.json["counter"] = id + 1;
+	//int id = db.json["counter"];
+	//db.json["counter"] = id + 1;
 
-    njson task;
-    task["title"] = title;
-    task["timestamp"] = ::time(nullptr);
-    task["flags"] = flags;
-    task["id"] = id;
+    //njson task;
+    //task["title"] = title;
+    //task["timestamp"] = ::time(nullptr);
+    //task["flags"] = flags;
+    //task["id"] = id;
 
-	db.json["tasks"].push_back(task);
+	//db.json["tasks"].push_back(task);
 
-	return id;
+	//return id;
+
+    TaskEntry task;
+
+#ifdef WITH_AT
+    task.atId = -1;
+#endif
+    task.title = title;
+    task.timestamp = t;
+    task.flags = flags;
+    task.id = db->nextId();
+
+    db->save(task);
+
+    return task.id;
 }
 
 #ifdef WITH_AT
-bool todol::addNotify(todol::DbHandle &db, int n, timestamp_t t) {
-    for (auto &ent: db.json["tasks"]) {
-        if (ent["id"] == n) {
-            if (ent.find("atId") != ent.end()) {
-                TODOL_ERROR("Task [" << n << "] already has notification");
-                return false;
-            }
+bool todol::addNotify(todol::DbHandle &db, int n, time_t t) {
+    TaskEntry task;
 
-            ent["notifyTime"] = t;
-            int id = todol::at::addAtTask('T', ent);
-
-            if (id != -1) {
-                std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
-                    << "Added notification for [" << id << "] " << ent["title"].get<std::string>()
-                    << TODOL_RESET << std::endl;
-                return true;
-            }
-
-            return false;
-        }
+    if (!db->find(n, task)) {
+        TODOL_ERROR("Task [" << n << "] does not exist");
+        return false;
     }
 
-    TODOL_ERROR("Task [" << n << "] does not exist");
-    return false;
+    if (task.atId != -1) {
+        TODOL_ERROR("Task [" << n << "] already has a notification");
+        return false;
+    }
+
+    task.notifyAt = t;
+
+    int id = todol::at::addAtTask('T', task);
+
+    if (id != -1) {
+        task.atId = id;
+        db->save(task);
+        std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
+            << "Added notification for [" << n << "] " << task.title << TODOL_RESET << std::endl;
+        return true;
+    } else {
+        TODOL_ERROR("Failed to create at notification for task [" << n << "]");
+        return false;
+    }
 }
 #endif
 
 int todol::cmdAdd(const std::string &title) {
-	DbHandle db;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
 
-	if (readDatabase(db)) {
-	    auto it = std::find_if(db.json["tasks"].begin(), db.json["tasks"].end(),
-                [&title](const njson &task) -> bool {
-                    return task["title"] == title;
-                });
+    // TODO: check if entry with title already exists
+    time_t t;
+    if (!::time(&t)) {
+        TODOL_ERROR("Failed to get current time");
+        return EXIT_FAILURE;
+    }
+    int r = addTask(db, title, 0, t);
 
-        if (it != db.json["tasks"].end()) {
-            TODOL_ERROR("Task with such title already exists");
-            return EXIT_FAILURE;
-        }
-	} else {
-		initDatabase(db);
-	}
+    if (r == -1) {
+        TODOL_ERROR("Failed to add task");
+        return EXIT_FAILURE;
+    }
 
-	int id = addTask(db, title, 0, 0);
+    std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "Added task [" << r << "]"
+        << TODOL_RESET << std::endl;
 
-	std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "Added [" << id
-			<< "]" << TODOL_RESET << std::endl;
-
-	if (!writeDatabase(db)) {
-		TODOL_ERROR("Failed to save task");
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 int todol::cmdLs() {
-	DbHandle db;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
+    auto ls = db->list();
 
-	if (!readDatabase(db)) {
-		TODOL_ERROR("Database does not exist");
-		return EXIT_FAILURE;
-	}
+    char buf[512];
 
-	char buf[512];
+    for (const auto &task : ls) {
+        if (task.flags & TODOL_FLAG_COMPLETE) {
+            std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "[" << task.id << "]"
+                << TODOL_RESET;
+        } else {
+            std::cout << "[" << task.id << "]";
+        }
 
-	for (const auto &task : db.json["tasks"]) {
-		if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
-			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "["
-					<< task["id"] << "]" << TODOL_RESET;
-		} else {
-			std::cout << "[" << task["id"] << "]";
-		}
-		std::cout << "\t" << TODOL_COLOR(bold) << task["title"].get<std::string>()
-            << TODOL_RESET << std::endl;
-		time_t t = task["timestamp"];
-		struct tm lt;
-		localtime_r(&t, &lt);
-		if (strftime(buf, 512, "%c", &lt) == 0) {
-		    TODOL_ERROR("Time formatting error");
+        std::cout << "\t" << TODOL_COLOR(bold) << task.title << TODOL_RESET << std::endl;
+
+        struct tm lt;
+        localtime_r(&task.timestamp, &lt);
+        if (strftime(buf, 512, "%c", &lt) == 0) {
+            TODOL_ERROR("Time formatting error");
             return EXIT_FAILURE;
-		}
-		if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
-			std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "+++"
-					<< TODOL_RESET;
-		}
-		std::cout << "\t" << buf << std::endl;
+        }
+
+        if (task.flags & TODOL_FLAG_COMPLETE) {
+            std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "+++" << TODOL_RESET;
+        }
+        std::cout << "\t" << buf << std::endl;
 #ifdef WITH_AT
-        if (task.find("notifyTime") != task.end()) {
-            t = task["notifyTime"];
-            localtime_r(&t, &lt);
+        if (task.atId != -1) {
+            localtime_r(&task.notifyAt, &lt);
             if (strftime(buf, 512, "%c", &lt) == 0) {
                 TODOL_ERROR("Time formatting error");
                 return EXIT_FAILURE;
@@ -201,8 +209,8 @@ int todol::cmdLs() {
                 return EXIT_FAILURE;
             }
 
-            if (ct > t) {
-                if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
+            if (ct > task.notifyAt) {
+                if (task.flags & TODOL_FLAG_COMPLETE) {
                     std::cout << TODOL_COLOR(lightblack) << "\tNotified at " << buf << TODOL_RESET
                         << std::endl;
                 } else {
@@ -210,190 +218,94 @@ int todol::cmdLs() {
                         << TODOL_RESET << std::endl;
                 }
             } else {
-                if (!(static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE)) {
+                if (!(task.flags & TODOL_FLAG_COMPLETE)) {
                     std::cout << "\tNotify at " << buf << std::endl;
                 }
             }
         }
 #endif
-	}
+    }
 
 	return EXIT_SUCCESS;
 }
 
 int todol::cmdRm(const std::list<int> &ids) {
-	DbHandle db;
-
-	if (!readDatabase(db)) {
-		TODOL_ERROR("Database does not exist");
-		return EXIT_FAILURE;
-	}
-
-	auto oldSize = db.json["tasks"].size();
-
-	db.json["tasks"].erase(
-			std::remove_if(db.json["tasks"].begin(), db.json["tasks"].end(),
-					[&ids](const njson &t) -> bool {
-						int id = t["id"];
-						bool r = std::find(ids.begin(), ids.end(), id) != ids.end();
-						if (r) {
-							std::cout << "Removing [" << id << "] "
-                                << t["title"].get<std::string>() << std::endl;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
+    db->remove_if([&ids] (const TaskEntry &e) -> bool {
+        bool r = std::find(ids.begin(), ids.end(), e.id) != ids.end();
+        if (r) {
 #ifdef WITH_AT
-                                if (t.find("atId") != t.end()) {
-                                    if (!at::rmTask('T', t["atId"])) {
-                                        TODOL_ERROR("Failed to remove at task");
-                                    }
-                                }
+            if (e.atId != -1) {
+                if (!at::rmTask('T', e.atId)) {
+                    TODOL_ERROR("Failed to remove at task for [" << e.id << "]");
+                }
+            }
 #endif
-						}
-						return r;
-					}), db.json["tasks"].end());
+            std::cout << "Removing [" << e.id << "]" << std::endl;
+        }
+        return r;
+    });
 
-	if (!writeDatabase(db)) {
-		TODOL_ERROR("Failed to commit changes");
-		return EXIT_FAILURE;
-	}
-
-	return oldSize == db.json["tasks"].size() ? EXIT_FAILURE : EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 int todol::cmdClear() {
-	DbHandle db;
-
-	if (!readDatabase(db)) {
-		TODOL_ERROR("Database does not exist");
-		return EXIT_FAILURE;
-	}
-
-    for (const auto &t: db.json["tasks"]) {
-        if (t.find("atId") != t.end()) {
-            at::rmTask('T', t["atId"]);
-        }
-    }
-
-	db.json["tasks"] = njson::array();
-	db.json["counter"] = 0;
-
-	if (!writeDatabase(db)) {
-		TODOL_ERROR("Failed to commit changes");
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
+    db->reset();
+    return EXIT_SUCCESS;
 }
 
 int todol::cmdDo(const std::list<int> &indices) {
-	DbHandle db;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
 
-	if (!readDatabase(db)) {
-		TODOL_ERROR("Database does not exist");
-		return EXIT_FAILURE;
-	}
+    db->update([&indices] (TaskEntry &task) -> bool {
+        bool r = std::find(indices.begin(), indices.end(), task.id) != indices.end();
+        if (r && !(task.flags & TODOL_FLAG_COMPLETE)) {
+            std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen) << "Completed [" << task.id
+                << "]" << TODOL_RESET << std::endl;
+            task.flags |= TODOL_FLAG_COMPLETE;
 
-    char buf[256];
-
-	for (auto &task : db.json["tasks"]) {
-		bool r = std::find(indices.begin(), indices.end(), static_cast<id_t>(task["id"]))
-				!= indices.end();
-
-		if (r) {
-			if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
-				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
-						<< task["id"] << "] `" << task["title"].get<std::string>()
-                        << "' Is already completed" << TODOL_RESET << std::endl;
-			} else {
-                if (task.find("atId") != task.end()) {
-                    if (at::rmTask('T', task["atId"])) {
-                        struct tm lt;
-                        time_t t = task["notifyTime"];
-
-                        localtime_r(&t, &lt);
-                        if (strftime(buf, 256, "%c", &lt) == 0) {
-                            TODOL_ERROR("Time formatting error");
-                            return EXIT_FAILURE;
-                        }
-
-                        std::cout << "Cancelled notification at " << buf << std::endl;
-                        task.erase(task.find("atId"));
-                        task.erase(task.find("notifyTime"));
-                    } else {
-                        TODOL_ERROR("Failed to remove at task for [" << task["id"] << "]");
-                    }
+#ifdef WITH_AT
+            if (task.atId != -1) {
+                char buf[256];
+                struct tm lt;
+                time_t t = task.notifyAt;
+                localtime_r(&t, &lt);
+                size_t l = strftime(buf, 256, "%c", &lt);
+                std::cout << "Cancelled notification";
+                if (l) {
+                    std::cout << " at " << buf;
                 }
+                std::cout << std::endl;
+            }
+#endif
+        }
+        return r;
+    });
 
-				task["flags"] = static_cast<flags_t>(task["flags"]) | TODOL_FLAG_COMPLETE;
-				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(lightgreen)
-						<< "Completed " << "[" << task["id"] << "] "
-                        << task["title"].get<std::string>()	<< TODOL_RESET << std::endl;
-			}
-		}
-	}
-
-	if (!writeDatabase(db)) {
-		TODOL_ERROR("Failed to commit changes");
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 int todol::cmdUndo(const std::list<int> &indices) {
-	DbHandle db;
+    auto db = todol::open(std::string(userHome()) + "/.todol");
 
-	if (!readDatabase(db)) {
-		TODOL_ERROR("Database does not exist");
-		return EXIT_FAILURE;
-	}
+    db->update([&indices] (TaskEntry &task) -> bool {
+            bool r = std::find(indices.begin(), indices.end(), task.id) != indices.end();
+            if (r && (task.flags & TODOL_FLAG_COMPLETE)) {
+                std::cout << "Uncompleted [" << task.id << "]" << std::endl;
+            }
+            return r;
+        });
 
-	for (auto &task : db.json["tasks"]) {
-		bool r = std::find(indices.begin(), indices.end(), static_cast<id_t>(task["id"]))
-				!= indices.end();
-
-		if (r) {
-			if (static_cast<flags_t>(task["flags"]) & TODOL_FLAG_COMPLETE) {
-				task["flags"] =
-						static_cast<flags_t>(task["flags"]) & ~TODOL_FLAG_COMPLETE;
-				std::cout << TODOL_COLOR(bold) << "Uncompleted [" << task["id"]
-						<< "] " << task["title"].get<std::string>() << TODOL_RESET << std::endl;
-			} else {
-				std::cout << TODOL_COLOR(bold) << TODOL_COLOR(red) << "["
-						<< task["id"] << "] `" << task["title"].get<std::string>()
-                        << "' Is not completed" << TODOL_RESET << std::endl;
-			}
-		}
-	}
-
-	if (!writeDatabase(db)) {
-		TODOL_ERROR("Failed to commit changes");
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 #ifdef WITH_AT
 int todol::cmdNotify(int n, const std::string &time, const std::string &date) {
     auto t = time::parseTime(time, date);
+    auto db = todol::open(std::string(userHome()) + "/.todol");
 
-    DbHandle db;
-
-    if (!readDatabase(db)) {
-        TODOL_ERROR("Database does not exist");
-        return EXIT_FAILURE;
-    }
-
-    if (!addNotify(db, n, static_cast<timestamp_t>(t))) {
-        TODOL_ERROR("Failed to add notify to [" << n << "]");
-        return EXIT_FAILURE;
-    }
-
-    if (!writeDatabase(db)) {
-        TODOL_ERROR("Failed to commit changes");
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return addNotify(db, n, t);
 }
 #endif
 
@@ -410,15 +322,3 @@ bool todol::parseIndices(const std::string &idxString,
 	return true;
 }
 
-int todol::cmdJson() {
-    DbHandle db;
-
-    if (!readDatabase(db)) {
-        TODOL_ERROR("Database does not exist");
-        return EXIT_FAILURE;
-    }
-
-    std::cout << db.json.dump(4, ' ', false) << std::endl;
-
-    return EXIT_SUCCESS;
-}

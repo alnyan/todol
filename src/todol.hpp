@@ -1,4 +1,5 @@
 #pragma once
+#include "todol_storage.hpp"
 #ifdef WITH_COLOR
 #include "color.hpp"
 #endif
@@ -6,8 +7,6 @@
 #include <chrono>
 #include <string>
 #include <list>
-
-using njson = nlohmann::json;
 
 #define TODOL_FLAG_COMPLETE 1
 
@@ -24,13 +23,8 @@ using njson = nlohmann::json;
 
 namespace todol {
 
-using timestamp_t = uint64_t;
-using flags_t = uint32_t;
-using id_t = int32_t;
-
-struct DbHandle {
-	njson json;
-};
+using DbHandle = std::unique_ptr<StorageProvider>;
+DbHandle open(const std::string &loc);
 
 const char *userHome();
 bool fileExists(const std::string &path);
@@ -39,12 +33,11 @@ bool readDatabase(DbHandle &j);
 bool writeDatabase(DbHandle &j);
 void initDatabase(DbHandle &j);
 
-int addTask(DbHandle &db, const std::string &title, uint32_t flags, timestamp_t nt);
+int addTask(DbHandle &db, const std::string &title, uint32_t flags, time_t nt);
 bool rmTask(DbHandle &db, int n);
 bool setFlags(DbHandle &db, int n, uint32_t flags);
 #ifdef WITH_AT
-bool addNotify(DbHandle &db, int n, timestamp_t t);
-bool rmNotify(DbHandle &db, int n);
+bool addNotify(DbHandle &db, int n, time_t t);
 #endif
 
 bool parseIndices(const std::string &idxString, std::list<int> &indices);
@@ -52,13 +45,11 @@ bool parseIndices(const std::string &idxString, std::list<int> &indices);
 int cmdAdd(const std::string &title);
 #ifdef WITH_AT
 int cmdNotify(int id, const std::string &time, const std::string &date);
-int cmdDismiss(int id);
 #endif
 int cmdRm(const std::list<int> &indices);
 int cmdLs();
 int cmdClear();
 int cmdDo(const std::list<int> &indices);
 int cmdUndo(const std::list<int> &indices);
-int cmdJson();
 
 }

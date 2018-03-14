@@ -4,7 +4,7 @@
 namespace todol {
 namespace at {
 
-int addAtTask(char q, njson &task);
+int addAtTask(char q, const TaskEntry &task);
 std::list<int> listTasks(char q);
 bool rmTask(char q, int atId);
 

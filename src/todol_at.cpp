@@ -82,7 +82,7 @@ static inline std::string &rtrim(std::string &s) {
     return s;
 }
 
-static std::string stringifyTimestamp(todol::timestamp_t t) {
+static std::string stringifyTimestamp(time_t t) {
     struct tm stm;
     struct tm *stp;
     char buf[4096];
@@ -144,16 +144,14 @@ std::list<int> todol::at::listTasks(char q) {
 }
 
 
-int todol::at::addAtTask(char q, njson &t) {
+int todol::at::addAtTask(char q, const todol::TaskEntry &t) {
     int res = -1;
     int tmpfd = -1;
-    std::string tt = t["title"];
-    std::string taskCmd = "notify-send -t 0 \"" + tt + "\"\n";
+    std::string taskCmd = "notify-send -t 0 \"" + t.title + "\"\n";
     char tmpn[] = "/tmp/todol.tmp.XXXXXX";
 
     if ((tmpfd = mkstemp(tmpn)) == -1) {
         std::cerr << "Failed to open temporary file" << std::endl;
-        t.erase(t.find("atId"));
         return -1;
     }
     write(tmpfd, taskCmd.c_str(), taskCmd.length());
@@ -161,15 +159,13 @@ int todol::at::addAtTask(char q, njson &t) {
 
     std::string x;
     res = ::exec("at", { "-q", std::string(1, q), "-f", tmpn,
-            stringifyTimestamp(t["notifyTime"]) }, x);
+            stringifyTimestamp(t.notifyAt) }, x);
 
     if (res != 0) {
-        t.erase(t.find("atId"));
         return -1;
     }
 
     int jobId = parseAddedJobId(x);
-    t["atId"] = jobId;
 
     remove(tmpn);
 
