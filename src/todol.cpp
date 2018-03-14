@@ -248,15 +248,19 @@ int todol::cmdUndo(const std::list<int> &indices) {
     return EXIT_SUCCESS;
 }
 
-int todol::cmdCat(int n, const std::string &c) {
+int todol::cmdCat(const std::list<int> &indices, const std::string &c) {
     auto db = todol::open(std::string(userHome()) + "/.todol");
 
-    db->update([n, &c] (TaskEntry &task) -> bool {
-            if (task.id == n) {
-                task.category = c;
-                return true;
+    db->update([&indices, &c] (TaskEntry &task) -> bool {
+            bool r = std::find(indices.begin(), indices.end(), task.id) != indices.end();
+            if (r) {
+                if (task.category == c) {
+                    return false;
+                } else {
+                    task.category = c;
+                }
             }
-            return false;
+            return r;
         });
 
     return EXIT_SUCCESS;

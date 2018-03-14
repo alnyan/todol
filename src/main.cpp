@@ -103,14 +103,21 @@ int main(int argc, char **argv) {
     }
 
     if (!strcmp(argv[1], "cat")) {
-        switch (argc) {
-        case 3:
-            return todol::cmdCat(atoi(argv[2]), "");
-        case 4:
-            return todol::cmdCat(atoi(argv[2]), argv[3]);
-        default:
+        if (argc < 3 || argc > 4) {
             return EXIT_FAILURE;
         }
+        std::string cat;
+        if (argc == 4) {
+            cat = argv[3];
+        }
+
+        std::list<int> ids;
+
+        if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
+            return EXIT_FAILURE;
+        }
+
+        return todol::cmdCat(ids, cat);
     }
 
 #ifdef WITH_WEB
