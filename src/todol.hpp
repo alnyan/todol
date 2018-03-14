@@ -46,6 +46,7 @@ int cmdAdd(const std::string &title);
 #ifdef WITH_AT
 int cmdNotify(int id, const std::string &time, const std::string &date);
 #endif
+int cmdCat(int n, const std::string &c);
 int cmdRm(const std::list<int> &indices);
 int cmdLs();
 int cmdClear();

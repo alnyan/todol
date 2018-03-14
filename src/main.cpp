@@ -13,6 +13,7 @@ static const std::string s_helpMessage =
     "\t* clear - removes all tasks\n"
     "\t* do <N> - marks task N as completed\n"
     "\t* undo <N> - removes complete flag from task N\n"
+    "\t* cat <N> <category> - sets N's category (or clears, if none specified)\n"
     "\t* help - prints this message\n"
 #ifdef WITH_AT
     "\t* notify <N> <TIME> [DATE] - adds a notification for task N\n"
@@ -99,6 +100,17 @@ int main(int argc, char **argv) {
 
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "--help")) {
         return printHelp();
+    }
+
+    if (!strcmp(argv[1], "cat")) {
+        switch (argc) {
+        case 3:
+            return todol::cmdCat(atoi(argv[2]), "");
+        case 4:
+            return todol::cmdCat(atoi(argv[2]), argv[3]);
+        default:
+            return EXIT_FAILURE;
+        }
     }
 
 #ifdef WITH_WEB

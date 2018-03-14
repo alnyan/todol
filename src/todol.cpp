@@ -126,7 +126,11 @@ int todol::cmdLs() {
             std::cout << "[" << task.id << "]";
         }
 
-        std::cout << "\t" << TODOL_COLOR(bold) << task.title << TODOL_RESET << std::endl;
+        std::cout << "\t" << TODOL_COLOR(bold);
+        if (!task.category.empty()) {
+            std::cout << "[" << task.category << "] ";
+        }
+        std::cout << task.title << TODOL_RESET << std::endl;
 
         struct tm lt;
         localtime_r(&task.timestamp, &lt);
@@ -239,6 +243,20 @@ int todol::cmdUndo(const std::list<int> &indices) {
                 std::cout << "Uncompleted [" << task.id << "]" << std::endl;
             }
             return r;
+        });
+
+    return EXIT_SUCCESS;
+}
+
+int todol::cmdCat(int n, const std::string &c) {
+    auto db = todol::open(std::string(userHome()) + "/.todol");
+
+    db->update([n, &c] (TaskEntry &task) -> bool {
+            if (task.id == n) {
+                task.category = c;
+                return true;
+            }
+            return false;
         });
 
     return EXIT_SUCCESS;

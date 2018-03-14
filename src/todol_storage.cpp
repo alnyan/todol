@@ -37,6 +37,9 @@ void todol::JsonStorageProvider::readDatabase() {
             task.id = ent["id"];
             task.timestamp = ent["timestamp"];
             task.flags = ent["flags"];
+            if (ent.find("category") != ent.end()) {
+                task.category = ent["category"];
+            }
 #ifdef WITH_AT
             if (ent.find("atId") != ent.end()) {
                 task.notifyAt = ent["notifyAt"];
@@ -72,6 +75,9 @@ void todol::JsonStorageProvider::flushCache() {
             {"flags", ent.flags}
         };
 
+        if (!ent.category.empty()) {
+            taskJson["category"] = ent.category;
+        }
 #ifdef WITH_AT
         if (ent.atId != -1) {
             taskJson["atId"] = ent.atId;

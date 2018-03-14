@@ -10,6 +10,7 @@ struct TaskEntry {
     std::string title;
     uint32_t flags;
     time_t timestamp;
+    std::string category;
 #ifdef WITH_AT
     time_t notifyAt;
     int atId;
