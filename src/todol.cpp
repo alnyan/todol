@@ -42,64 +42,8 @@ todol::DbHandle todol::open(const std::string &n) {
     return DbHandle(new JsonStorageProvider(n));
 }
 
-//bool todol::readDatabase(todol::DbHandle &j) {
-	//std::ifstream s(std::string(userHome()) + "/.todol/db.json");
-
-	//if (!s) {
-		//return false;
-	//}
-
-	//j.json = nlohmann::json::parse(s);
-
-	//return true;
-//}
-
-//bool todol::writeDatabase(todol::DbHandle &j) {
-	//std::string p = userHome();
-	//p += "/.todol";
-
-	//if (!fileExists(p)) {
-		//if (mkdir(p.c_str(), 0744) != 0) {
-			//return false;
-		//}
-	//}
-
-	//p += "/db.json";
-
-	//std::ofstream s(p);
-
-	//if (!s) {
-		//return false;
-	//}
-
-	//s << j.json.dump(4, ' ', false);
-
-	//return true;
-//}
-
-//void todol::initDatabase(todol::DbHandle &j) {
-	//j.json["counter"] = 0;
-//}
-
 int todol::addTask(todol::DbHandle &db, const std::string &title,
 		uint32_t flags, time_t t) {
-	//if (!db.json["tasks"].is_array()) {
-		//db.json["tasks"] = njson::array();
-	//}
-
-	//int id = db.json["counter"];
-	//db.json["counter"] = id + 1;
-
-    //njson task;
-    //task["title"] = title;
-    //task["timestamp"] = ::time(nullptr);
-    //task["flags"] = flags;
-    //task["id"] = id;
-
-	//db.json["tasks"].push_back(task);
-
-	//return id;
-
     TaskEntry task;
 
 #ifdef WITH_AT
