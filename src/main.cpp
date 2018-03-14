@@ -25,90 +25,90 @@ int printHelp() {
 }
 
 int main(int argc, char **argv) {
-	if (argc < 2) {
-		return todol::cmdLs();
-	}
+    if (argc < 2) {
+        return todol::cmdLs();
+    }
 
-	if (!strcmp(argv[1], "ls")) {
-		return todol::cmdLs();
-	}
+    if (!strcmp(argv[1], "ls")) {
+        return todol::cmdLs();
+    }
 
-	if (!strcmp(argv[1], "add")) {
-		if (argc < 3) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "add")) {
+        if (argc < 3) {
+            return EXIT_FAILURE;
+        }
 
-		std::string res = argv[2];
+        std::string res = argv[2];
 
-		for (int i = 3; i < argc; ++i) {
-			res += " " + std::string(argv[i]);
-		}
+        for (int i = 3; i < argc; ++i) {
+            res += " " + std::string(argv[i]);
+        }
 
-		return todol::cmdAdd(res);
-	}
+        return todol::cmdAdd(res);
+    }
 
-	if (!strcmp(argv[1], "rm")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "rm")) {
+        if (argc != 3) {
+            return EXIT_FAILURE;
+        }
 
-		std::list<int> ids;
+        std::list<int> ids;
 
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
+        if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
+            return EXIT_FAILURE;
+        }
 
-		return todol::cmdRm(ids);
-	}
+        return todol::cmdRm(ids);
+    }
 
-	if (!strcmp(argv[1], "clear")) {
-		if (argc != 2) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "clear")) {
+        if (argc != 2) {
+            return EXIT_FAILURE;
+        }
 
-		return todol::cmdClear();
-	}
+        return todol::cmdClear();
+    }
 
-	if (!strcmp(argv[1], "do")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "do")) {
+        if (argc != 3) {
+            return EXIT_FAILURE;
+        }
 
-		std::list<int> ids;
+        std::list<int> ids;
 
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
+        if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
+            return EXIT_FAILURE;
+        }
 
-		return todol::cmdDo(ids);
-	}
+        return todol::cmdDo(ids);
+    }
 
-	if (!strcmp(argv[1], "undo")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "undo")) {
+        if (argc != 3) {
+            return EXIT_FAILURE;
+        }
 
-		std::list<int> ids;
+        std::list<int> ids;
 
-		if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
-			return EXIT_FAILURE;
-		}
+        if (!todol::parseIndices(argv[2], ids) || ids.empty()) {
+            return EXIT_FAILURE;
+        }
 
-		return todol::cmdUndo(ids);
-	}
+        return todol::cmdUndo(ids);
+    }
 
-    if (!strcmp(argv[1], "help")) {
+    if (!strcmp(argv[1], "help") || !strcmp(argv[1], "--help")) {
         return printHelp();
     }
 
 #ifdef WITH_WEB
-	if (!strcmp(argv[1], "serve")) {
-		if (argc != 3) {
-			return EXIT_FAILURE;
-		}
+    if (!strcmp(argv[1], "serve")) {
+        if (argc != 3) {
+            return EXIT_FAILURE;
+        }
 
-		return todol::web::startServer(atoi(argv[2]));
-	}
+        return todol::web::startServer(atoi(argv[2]));
+    }
 #endif
 
 #ifdef WITH_AT
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
         }
     }
 #endif
-	TODOL_ERROR("Unknown command: " << argv[1]);
+    TODOL_ERROR("Unknown command: " << argv[1]);
 
 	return EXIT_FAILURE;
 }
