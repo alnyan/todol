@@ -10,8 +10,10 @@ struct TaskEntry {
     std::string title;
     uint32_t flags;
     time_t timestamp;
+#ifdef WITH_AT
     time_t notifyAt;
     int atId;
+#endif
 };
 
 class StorageProvider {
